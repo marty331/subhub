@@ -43,7 +43,7 @@ def pytest_configure():
     sys._called_from_test = True
 
     # Set stripe api key
-    stripe.api_key = CFG.STRIPE_API_KEY
+    # stripe.api_key = CFG.STRIPE_API_KEY
 
     # Locate absolute path of dynalite
     dynalite = f"{CFG.REPO_ROOT}/node_modules/.bin/dynalite"

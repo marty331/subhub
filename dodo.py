@@ -443,7 +443,7 @@ def task_local():
     return {
         'task_dep': [
             'check',
-            'stripe',
+            #'stripe',
             'venv',
             'dynalite:start', #FIXME: test removed as a dep due to concurrency bug
         ],
@@ -484,7 +484,7 @@ def task_perf_local():
         'basename': 'perf-local',
         'task_dep':[
             'check',
-            'stripe',
+            #'stripe',
             'venv',
             'dynalite:start'
         ],
@@ -504,7 +504,7 @@ def task_perf_remote():
         'basename': 'perf-remote',
         'task_dep':[
             'check',
-            'stripe',
+            #'stripe',
             'venv',
         ],
         'actions':[
@@ -520,7 +520,7 @@ def task_mypy():
     return {
         'task_dep': [
             'check',
-            'stripe',
+            #'stripe',
             'yarn',
             'venv',
         ],
@@ -536,7 +536,7 @@ def task_test():
     return {
         'task_dep': [
             'check',
-            'stripe',
+            #'stripe',
             'yarn',
             'venv',
             'dynalite:stop',
@@ -558,7 +558,7 @@ def task_pytest():
             'name': filename,
             'task_dep': [
                 'check',
-                'stripe',
+                #'stripe',
                 'yarn',
                 'venv',
                 'dynalite:stop',
@@ -604,7 +604,7 @@ def task_deploy():
             'task_dep': [
                 'check',
                 'creds',
-                'stripe',
+                #'stripe',
                 'yarn',
                 'test',
             ],

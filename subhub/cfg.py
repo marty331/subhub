@@ -350,6 +350,13 @@ class AutoConfigPlus(AutoConfig):  # pylint: disable=too-many-public-methods
         return self("HUB_API_KEY", "fake_hub_api_key")
 
     @property
+    def STRIPE_API_KEY(self):
+        """
+        stripe api key
+        """
+        return self("STRIPE_API_KEY", "fake_stripe_api_key")
+
+    @property
     def AWS_EXECUTION_ENV(self):
         """
         default value for aws execution env
