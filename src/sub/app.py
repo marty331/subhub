@@ -4,23 +4,34 @@
 
 import os
 import sys
+import inspect
 
 from typing import Optional, Union
 
+import logging.config
+import structlog
 import connexion
+import structlog
 import stripe
 import stripe.error
 from flask import current_app, g, jsonify
 from flask_cors import CORS
 from flask import request
+from structlog import configure, processors, stdlib, threadlocal, get_logger
+from pythonjsonlogger import jsonlogger
 
-from sub.shared import secrets
-from sub.shared.cfg import CFG
-from sub.shared.exceptions import SubHubError
-from sub.shared.db import SubHubAccount, SubHubDeletedAccount
-from sub.shared.log import get_logger
+from shared import secrets
+from shared.cfg import CFG
+from shared.exceptions import SubHubError
+from shared.db import SubHubAccount, SubHubDeletedAccount
+from shared.universal import dict_config, event_uppercase
+
+json_handler = logging.StreamHandler(sys.stdout)
+json_handler.setFormatter(jsonlogger.JsonFormatter())
 
 logger = get_logger()
+
+stripe.log = CFG.LOG_LEVEL
 
 
 def is_docker() -> bool:
@@ -75,6 +86,35 @@ def server_stripe_card_error(e):
 
 
 def create_app(config=None) -> connexion.FlaskApp:
+    logging.config.dictConfig(dict_config)
+
+    configure(
+        context_class=threadlocal.wrap_dict(dict),
+        logger_factory=stdlib.LoggerFactory(),
+        wrapper_class=stdlib.BoundLogger,
+        processors=[
+            # Filter only the required log levels into the log output
+            stdlib.filter_by_level,
+            # Adds logger=module_name (e.g __main__)
+            stdlib.add_logger_name,
+            # Uppercase structlog's event name which shouldn't be convoluted with AWS events.
+            event_uppercase,
+            # Allow for string interpolation
+            stdlib.PositionalArgumentsFormatter(),
+            # Render timestamps to ISO 8601
+            processors.TimeStamper(fmt="iso"),
+            # Include the stack dump when stack_info=True
+            processors.StackInfoRenderer(),
+            # Include the application exception when exc_info=True
+            # e.g log.exception() or log.warning(exc_info=True)'s behavior
+            processors.format_exc_info,
+            # Decodes the unicode values in any kv pairs
+            processors.UnicodeDecoder(),
+            # Creates the necessary args, kwargs for log()
+            stdlib.render_to_log_kwargs,
+        ],
+        cache_logger_on_first_use=True,
+    )
     logger.info("creating flask app", config=config)
     region = "localhost"
     host = f"http://localhost:{CFG.DYNALITE_PORT}"
@@ -142,6 +182,9 @@ def create_app(config=None) -> connexion.FlaskApp:
 
     @app.app.before_request
     def before_request():
+        headers = str(request.headers)
+        logger.debug("Request headers", headers=headers.splitlines())
+        logger.debug("Request body", body=request.get_data())
         g.subhub_account = current_app.subhub_account
         g.subhub_deleted_users = current_app.subhub_deleted_users
         g.app_system_id = None

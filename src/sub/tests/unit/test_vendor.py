@@ -5,8 +5,7 @@
 import pytest
 import stripe
 
-from stripe.error import APIError, InvalidRequestError
-from pytest_socket import disable_socket, enable_socket
+from stripe.error import APIError
 
 from sub.shared import vendor, universal
 

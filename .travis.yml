@@ -1,14 +1,20 @@
 language: python
 dist: xenial
+sudo: required
 python:
-  - "3.7"
-services:
-  - docker
+ - "3.7"
+addons:
+  apt:
+    sources: ['ubuntu-toolchain-r-test']
+    packages: ['bash', 'coreutils', 'awscli']
 env:
   global:
     - BOTO_CONFIG: "/dev/null"
+    - LOG_LEVEL: ERROR
     - AWS_XRAY_SDK_ENABLED: false
     - DEPLOYED_ENV: travis
+    # The next declaration is the encrypted STRIPE_API_KEY, created
+    #   via the "travis encrypt" command using the project repo's public key
     - secure: ldfVKFlO/kQLAmXFTf+UIsj1OzGV+EtfF1mEqp9ArD9eZg0EiM6mr2LTWMAKUyUlD3uCXSkF0xmIUIxNSUB+FwDxSNZdtO+Fx3hmF6I6ofX2NGEDdz2l/F7LeC3MfyPU7qwL9IL15gX2w6got78eDtdGMlhmt2s8dNsWDbLlAMjGZtCvfcXjY5GJS96Pe4lNHbCNlAi+x8E2UsyOBAEAySXfCfbS1JLW9XqiBKk1hinE+f2j47Wb6DJVX3JKfYLgdRdO+4JVa5dJvBIGhmO3lTi+vwDpTx+QbI+/oaoLpqSBpPwcpycZSPCJ0Oo+HfR8DCQRmT8NB6uc/wD44hrYlOXfXudaUH1TzQ2eT+ZT6BY5ikCArHpRDFHzlu2XmbTRq+phzArlV54H8xd46sIrMkLlVP4UHQ1GVOnXWTlG6wkrXxyPUFPAFeSKOiiK2UoHgz6j7yOTwKkuYH3/96GzH+YmoNZPFaDCh31YDFW4+ynlHFWA96U9+GKVS66f52aNMf7El6SwYSeuOzfOnKo5h5opKkkjO83KVrfzwBwpYkXHtyMG2o8hhJUDBF6VozPusJllkZfdyapdQgdTtH5R4Es1QNkzLAfX/iNGfr1yMc+I6O7VLEoB30202m1GDaocqnUwCHnMhnPdkw8E1x0DXoqSBHlCr/GJMjNiRsPjZ0k=
 
 before_install:
@@ -23,4 +29,15 @@ jobs:
   include:
     - stage: Unit Tests
       script:
+        # The below 2 TravisCI statements are a workaround for an issue in TravisCI which
+        # is best described as "Large writes to stdout sometimes fail with "Resource temporarily unavailable".
+        # More information about this can be found at:
+        #   https://github.com/travis-ci/travis-ci/issues/4704#issuecomment-348435959
+        #
+        # Turn off O_NONBLOCK:
+        - python3.7 -c 'import os,sys,fcntl; flags = fcntl.fcntl(sys.stdout, fcntl.F_GETFL);
+            fcntl.fcntl(sys.stdout, fcntl.F_SETFL, flags&~os.O_NONBLOCK);'
+        # Check whether O_NONBLOCK is set (should print "0"):
+        - python3.7 -c 'import os,sys,fcntl; flags = fcntl.fcntl(sys.stdout, fcntl.F_GETFL);
+            print(flags&os.O_NONBLOCK);'
         - doit test

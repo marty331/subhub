@@ -5,18 +5,24 @@
 import os
 import sys
 
+import logging
 import connexion
 import stripe
+import structlog
+import logging.config
+
+from structlog import configure, processors, stdlib, threadlocal, get_logger
 
 from flask import current_app, g, jsonify
 from flask_cors import CORS
 from flask import request
+from pythonjsonlogger import jsonlogger
 
 from shared import secrets
 from shared.cfg import CFG
 from shared.exceptions import SubHubError
 from shared.db import HubEvent
-from shared.log import get_logger
+from shared.universal import dict_config, event_uppercase
 
 logger = get_logger()
 
@@ -65,6 +71,34 @@ def is_container() -> bool:
 
 
 def create_app(config=None):
+    logging.config.dictConfig(dict_config)
+
+    configure(
+        context_class=threadlocal.wrap_dict(dict),
+        logger_factory=stdlib.LoggerFactory(),
+        wrapper_class=stdlib.BoundLogger,
+        processors=[
+            # Filter only the required log levels into the log output
+            stdlib.filter_by_level,
+            # Adds logger=module_name (e.g __main__)
+            stdlib.add_logger_name,
+            # Uppercase structlog's event name which shouldn't be convoluted with AWS events.
+            event_uppercase,
+            # Allow for string interpolation
+            stdlib.PositionalArgumentsFormatter(),
+            # Render timestamps to ISO 8601
+            processors.TimeStamper(fmt="iso"),
+            # Include the stack dump when stack_info=True
+            processors.StackInfoRenderer(),
+            # Include the application exception when exc_info=True
+            # e.g log.exception() or log.warning(exc_info=True)'s behavior
+            processors.format_exc_info,
+            # Decodes the unicode values in any kv pairs
+            processors.UnicodeDecoder(),
+            # Creates the necessary args, kwargs for log()
+            stdlib.render_to_log_kwargs,
+        ],
+    )
     logger.info("creating flask app", config=config)
     region = "localhost"
     host = f"http://localhost:{CFG.DYNALITE_PORT}"
@@ -116,6 +150,9 @@ def create_app(config=None):
 
     @app.app.before_request
     def before_request():
+        headers = str(request.headers)
+        logger.debug("Request headers", headers=headers.splitlines())
+        logger.debug("Request body", body=request.get_data())
         g.hub_table = current_app.hub_table
         g.app_system_id = None
         if CFG.PROFILING_ENABLED:
