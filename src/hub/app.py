@@ -8,21 +8,17 @@ import sys
 import logging
 import connexion
 import stripe
-import structlog
 import logging.config
-
-from structlog import configure, processors, stdlib, threadlocal, get_logger
 
 from flask import current_app, g, jsonify
 from flask_cors import CORS
 from flask import request
-from pythonjsonlogger import jsonlogger
 
 from shared import secrets
 from shared.cfg import CFG
 from shared.exceptions import SubHubError
 from shared.db import HubEvent
-from shared.universal import dict_config, event_uppercase
+from shared.log import get_logger
 
 logger = get_logger()
 

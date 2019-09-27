@@ -18,28 +18,7 @@ from pythonjsonlogger import jsonlogger
 from hub.app import create_app, g
 from hub.vendor.controller import event_process
 from shared.cfg import CFG
-
-from structlog import configure, processors, stdlib, threadlocal, get_logger
-from shared.universal import dict_config
-
-logging.config.dictConfig(dict_config)
-
-configure(
-    context_class=threadlocal.wrap_dict(dict),
-    logger_factory=stdlib.LoggerFactory(),
-    wrapper_class=stdlib.BoundLogger,
-    processors=[
-        stdlib.filter_by_level,
-        stdlib.add_logger_name,
-        stdlib.add_log_level,
-        stdlib.PositionalArgumentsFormatter(),
-        processors.TimeStamper(fmt="iso"),
-        processors.StackInfoRenderer(),
-        processors.format_exc_info,
-        processors.UnicodeDecoder(),
-        stdlib.render_to_log_kwargs,
-    ],
-)
+from shared.log import get_logger
 
 logger = get_logger()
 

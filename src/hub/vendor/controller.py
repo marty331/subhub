@@ -16,7 +16,7 @@ from hub.vendor.customer import (
     StripeCustomerSubscriptionDeleted,
 )
 from hub.vendor.invoices import StripeInvoicePaymentFailed
-from structlog import get_logger
+from hub.shared.log import get_logger
 
 logger = get_logger()
 

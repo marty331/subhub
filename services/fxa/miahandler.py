@@ -17,44 +17,12 @@ sys.path.insert(0, join(dirname(realpath(__file__)), 'src'))
 # TODO!
 # newrelic.agent.initialize()
 
-from structlog import configure, processors, stdlib, threadlocal, get_logger
-from pythonjsonlogger import jsonlogger
-
 from aws_xray_sdk.core import xray_recorder, patch_all
 from aws_xray_sdk.core.context import Context
 from aws_xray_sdk.ext.flask.middleware import XRayMiddleware
 
 from hub.verifications import events_check
-from shared.universal import dict_config, event_uppercase
-
-logging.config.dictConfig(dict_config)
-
-configure(
-        context_class=threadlocal.wrap_dict(dict),
-        logger_factory=stdlib.LoggerFactory(),
-        wrapper_class=stdlib.BoundLogger,
-        processors=[
-            # Filter only the required log levels into the log output
-            stdlib.filter_by_level,
-            # Adds logger=module_name (e.g __main__)
-            stdlib.add_logger_name,
-            # Uppercase structlog's event name which shouldn't be convoluted with AWS events.
-            event_uppercase,
-            # Allow for string interpolation
-            stdlib.PositionalArgumentsFormatter(),
-            # Render timestamps to ISO 8601
-            processors.TimeStamper(fmt="iso"),
-            # Include the stack dump when stack_info=True
-            processors.StackInfoRenderer(),
-            # Include the application exception when exc_info=True
-            # e.g log.exception() or log.warning(exc_info=True)'s behavior
-            processors.format_exc_info,
-            # Decodes the unicode values in any kv pairs
-            processors.UnicodeDecoder(),
-            # Creates the necessary args, kwargs for log()
-            stdlib.render_to_log_kwargs,
-        ],
-)
+from hub.shared.log import get_logger
 
 logger = get_logger()
 

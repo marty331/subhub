@@ -15,7 +15,7 @@ from flask import g
 
 from hub.app import create_app
 from hub.shared.cfg import CFG
-from structlog import get_logger
+from hub.shared.log import get_logger
 
 logger = get_logger()
 

@@ -9,25 +9,22 @@ import inspect
 from typing import Optional, Union
 
 import logging.config
-import structlog
 import connexion
-import structlog
 import stripe
 import stripe.error
 from flask import current_app, g, jsonify
 from flask_cors import CORS
 from flask import request
-from structlog import configure, processors, stdlib, threadlocal, get_logger
-from pythonjsonlogger import jsonlogger
 
 from shared import secrets
 from shared.cfg import CFG
 from shared.exceptions import SubHubError
 from shared.db import SubHubAccount, SubHubDeletedAccount
-from shared.universal import dict_config, event_uppercase
 
 json_handler = logging.StreamHandler(sys.stdout)
 json_handler.setFormatter(jsonlogger.JsonFormatter())
+
+from shared.log import get_logger
 
 logger = get_logger()
 

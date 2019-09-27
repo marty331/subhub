@@ -4,7 +4,7 @@
 
 from shared import secrets
 from shared.cfg import CFG
-from structlog import get_logger
+from shared.log import get_logger
 
 logger = get_logger()
 
