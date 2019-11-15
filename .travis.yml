@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 language: python
 dist: xenial
 sudo: required
@@ -13,6 +17,7 @@ cache:
   directories:
     - /home/travis/.nvm
     - /home/travis/.cache/pip
+    - /home/travis/.npm
 env:
   global:
     - BOTO_CONFIG: "/dev/null"
@@ -25,6 +30,8 @@ before_install:
   - pip install -r automation_requirements.txt
   - sudo apt-get install -y awscli
   - ./bin/aws-credentials.sh
+  - sudo apt-get install -y npm
+  - sudo npm install -g serverless
 
 jobs:
   include:
@@ -32,3 +39,6 @@ jobs:
       script:
         - tox
         - cd /home/travis/build/mozilla/subhub/reports && bash <(curl -s https://codecov.io/bash) -cF python
+    - stage: Validate Serverless
+      script:
+        - cd services/fxa && serverless print --stage=dev
