@@ -25,7 +25,7 @@ logger = get_logger()
 CWD = os.path.realpath(os.path.dirname(__file__))
 
 
-def test_hours_back():
+def test_hours_back() -> None:
     from hub.verifications.events_check import EventCheck
 
     event_check_class = EventCheck(hours_back=1)
@@ -35,7 +35,7 @@ def test_hours_back():
     )
 
 
-def test_process_missing_event(dynamodb):
+def test_process_missing_event() -> None:
     from hub.verifications.events_check import EventCheck, process_events
 
     missing_event = "event.json"
@@ -44,12 +44,12 @@ def test_process_missing_event(dynamodb):
         event_check.process_missing_event(json.load(f))
 
 
-def test_retrieve_events(dynamodb):
+def test_retrieve_events() -> None:
     from hub.verifications.events_check import EventCheck, process_events
 
     missing_event = "event.json"
 
-    def get_hours_back():
+    def get_hours_back() -> int:
         h_hours_ago = datetime.now() - timedelta(hours=6)
         return int(time.mktime(h_hours_ago.timetuple()))
 
@@ -64,12 +64,12 @@ def test_retrieve_events(dynamodb):
     unstub()
 
 
-def test_retrieve_events_more():
+def test_retrieve_events_more() -> None:
     from hub.verifications.events_check import EventCheck
 
     missing_event = "more_event.json"
 
-    def get_hours_back():
+    def get_hours_back() -> int:
         h_hours_ago = datetime.now() - timedelta(hours=6)
         return int(time.mktime(h_hours_ago.timetuple()))
 
@@ -87,12 +87,12 @@ def test_retrieve_events_more():
     unstub()
 
 
-def test_process_events(dynamodb):
+def test_process_events(dynamodb: str) -> None:
     os.environ["DYNALITE_URL"] = dynamodb
     missing_event = "event.json"
     from hub.verifications.events_check import process_events
 
-    def get_hours_back():
+    def get_hours_back() -> int:
         h_hours_ago = datetime.now() - timedelta(hours=6)
         return int(time.mktime(h_hours_ago.timetuple()))
 

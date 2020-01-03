@@ -21,6 +21,10 @@ from hub.vendor.customer import (
 from hub.shared.exceptions import ClientError
 from hub.shared.db import SubHubDeletedAccountModel
 
+from shared.log import get_logger
+
+logger = get_logger()
+
 
 class StripeCustomerCreatedTest(TestCase):
     def setUp(self) -> None:
@@ -36,12 +40,12 @@ class StripeCustomerCreatedTest(TestCase):
         self.addCleanup(run_pipeline_patcher.stop)
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.mock_run_pipeline.return_value = None
         did_run = StripeCustomerCreated(self.customer_created_event).run()
         assert did_run
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
         expected_payload = {
             "event_id": "evt_00000000000000",
             "event_type": "customer.created",
@@ -56,7 +60,7 @@ class StripeCustomerCreatedTest(TestCase):
 
         assert actual_payload == expected_payload
 
-    def test_create_payload_missing_name(self):
+    def test_create_payload_missing_name(self) -> None:
         expected_payload = {
             "event_id": "evt_00000000000000",
             "event_type": "customer.created",
@@ -121,18 +125,18 @@ class StripeCustomerDeletedTest(TestCase):
         self.mock_get_deleted_user = get_deleted_user_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.mock_get_deleted_user.return_value = self.deleted_user
         self.mock_run_pipeline.return_value = None
         did_run = StripeCustomerDeleted(self.customer_deleted_event).run()
         assert did_run
 
-    def test_get_deleted_user(self):
+    def test_get_deleted_user(self) -> None:
         self.mock_get_deleted_user.return_value = self.deleted_user
         user = StripeCustomerDeleted(self.customer_deleted_event).get_deleted_user()
         assert user == self.deleted_user
 
-    def test_get_deleted_user_no_meta(self):
+    def test_get_deleted_user_no_meta(self) -> None:
         self.mock_get_deleted_user.return_value = self.deleted_user
         with self.assertRaises(
             ClientError, msg="subhub_deleted_user could not be fetched - missing keys"
@@ -141,7 +145,7 @@ class StripeCustomerDeletedTest(TestCase):
                 self.customer_deleted_event_no_meta
             ).get_deleted_user()
 
-    def test_get_deleted_user_not_found(self):
+    def test_get_deleted_user_not_found(self) -> None:
         self.mock_get_deleted_user.return_value = None
         with self.assertRaises(
             ClientError,
@@ -149,7 +153,8 @@ class StripeCustomerDeletedTest(TestCase):
         ):
             StripeCustomerDeleted(self.customer_deleted_event).get_deleted_user()
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
+        print("test create payload customer deleted")
         expected_payload = dict(
             event_id="evt_00000000000000",
             event_type="customer.deleted",
@@ -172,16 +177,9 @@ class StripeCustomerDeletedTest(TestCase):
         )
 
         self.assertEqual(payload.keys(), expected_payload.keys())
-        if payload["messageCreatedAt"] != expected_payload["messageCreatedAt"]:
-            self.assertAlmostEqual(
-                payload["messageCreatedAt"],
-                expected_payload["messageCreatedAt"],
-                delta=10,
-            )
-            expected_payload["messageCreatedAt"] = payload["messageCreatedAt"]
         self.assertEqual(payload, expected_payload)
 
-    def test_create_payload_no_subscription_data(self):
+    def test_create_payload_no_subscription_data(self) -> None:
         expected_payload = dict(
             event_id="evt_00000000000000",
             event_type="customer.deleted",
@@ -204,13 +202,6 @@ class StripeCustomerDeletedTest(TestCase):
         )
 
         self.assertEqual(payload.keys(), expected_payload.keys())
-        if payload["messageCreatedAt"] != expected_payload["messageCreatedAt"]:
-            self.assertAlmostEqual(
-                payload["messageCreatedAt"],
-                expected_payload["messageCreatedAt"],
-                delta=10,
-            )
-            expected_payload["messageCreatedAt"] = payload["messageCreatedAt"]
         self.assertEqual(payload, expected_payload)
 
 
@@ -250,7 +241,7 @@ class StripeCustomerSourceExpiringTest(TestCase):
         self.mock_product = product_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.subscription["plan"] = self.plan
         self.customer.subscriptions["data"].append(self.subscription)
         self.mock_customer.return_value = self.customer
@@ -261,13 +252,13 @@ class StripeCustomerSourceExpiringTest(TestCase):
 
         assert did_run
 
-    def test_run_no_subscriptions(self):
+    def test_run_no_subscriptions(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_run_pipeline = None
         did_run = StripeCustomerSourceExpiring(self.source_expiring_event).run()
         assert did_run
 
-    def test_run_customer_not_found(self):
+    def test_run_customer_not_found(self) -> None:
         self.mock_customer.side_effect = InvalidRequestError(
             message="message", param="param"
         )
@@ -275,7 +266,7 @@ class StripeCustomerSourceExpiringTest(TestCase):
         with self.assertRaises(InvalidRequestError):
             StripeCustomerSourceExpiring(self.source_expiring_event).run()
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
         self.subscription["plan"] = self.plan
         self.customer.subscriptions["data"].append(self.subscription2)
         self.customer.subscriptions["data"].append(self.subscription)
@@ -298,7 +289,7 @@ class StripeCustomerSourceExpiringTest(TestCase):
         ).create_payload(self.customer)
         assert payload == expected_payload
 
-    def test_create_payload_no_subscriptions(self):
+    def test_create_payload_no_subscriptions(self) -> None:
         self.mock_product.return_value = self.product
 
         expected_payload = dict(
@@ -365,7 +356,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
         self.mock_charge = charge_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.return_value = self.charge
@@ -378,7 +369,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
 
         assert did_run
 
-    def test_get_user_id(self):
+    def test_get_user_id(self) -> None:
         self.mock_customer.return_value = self.customer
 
         expected_user_id = "user123"
@@ -388,7 +379,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
 
         assert user_id == expected_user_id
 
-    def test_get_user_id_fetch_error(self):
+    def test_get_user_id_fetch_error(self) -> None:
         self.mock_customer.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
         )
@@ -398,7 +389,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
                 self.subscription_created_event
             ).get_user_id("cust_123")
 
-    def test_get_user_id_deleted_cust(self):
+    def test_get_user_id_deleted_cust(self) -> None:
         self.mock_customer.return_value = self.deleted_customer
 
         with self.assertRaises(ClientError):
@@ -406,7 +397,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
                 self.subscription_created_event
             ).get_user_id("cust_1")
 
-    def test_get_user_id_none_error(self):
+    def test_get_user_id_none_error(self) -> None:
         self.mock_customer.return_value = self.customer_missing_user
 
         with self.assertRaises(ClientError):
@@ -414,7 +405,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
                 self.subscription_created_event
             ).get_user_id("cust_123")
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.return_value = self.charge
         self.mock_product.return_value = self.product
@@ -455,16 +446,9 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
         ).create_payload(user_id)
 
         self.assertEqual(payload.keys(), expected_payload.keys())
-        if payload["messageCreatedAt"] != expected_payload["messageCreatedAt"]:
-            self.assertAlmostEqual(
-                payload["messageCreatedAt"],
-                expected_payload["messageCreatedAt"],
-                delta=10,
-            )
-            expected_payload["messageCreatedAt"] = payload["messageCreatedAt"]
         self.assertEqual(payload, expected_payload)
 
-    def test_create_payload_product_fetch_error(self):
+    def test_create_payload_product_fetch_error(self) -> None:
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.return_value = self.charge
         self.mock_product.side_effect = InvalidRequestError(
@@ -476,7 +460,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
                 self.subscription_created_event
             ).create_payload("cust_123")
 
-    def test_create_payload_invoice_fetch_error(self):
+    def test_create_payload_invoice_fetch_error(self) -> None:
         self.mock_invoice.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
         )
@@ -488,7 +472,7 @@ class StripeCustomerSubscriptionCreatedTest(TestCase):
                 self.subscription_created_event
             ).create_payload("cust_123")
 
-    def test_create_payload_charge_fetch_error(self):
+    def test_create_payload_charge_fetch_error(self) -> None:
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
@@ -526,7 +510,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
         self.mock_customer = customer_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run(self):
+    def test_run(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_run_pipeline.return_value = None
 
@@ -536,7 +520,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
 
         assert did_run
 
-    def test_get_user_id(self):
+    def test_get_user_id(self) -> None:
         self.mock_customer.return_value = self.customer
 
         expected_user_id = "user123"
@@ -546,7 +530,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
 
         assert user_id == expected_user_id
 
-    def test_get_user_id_deleted_cust(self):
+    def test_get_user_id_deleted_cust(self) -> None:
         self.mock_customer.return_value = self.deleted_customer
 
         with self.assertRaises(ClientError):
@@ -554,7 +538,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
                 self.subscription_deleted_event
             ).get_user_id("cust_1")
 
-    def test_get_user_id_fetch_error(self):
+    def test_get_user_id_fetch_error(self) -> None:
         self.mock_customer.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
         )
@@ -564,7 +548,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
                 self.subscription_deleted_event
             ).get_user_id("cust_123")
 
-    def test_get_user_id_none_error(self):
+    def test_get_user_id_none_error(self) -> None:
         self.mock_customer.return_value = self.customer_missing_user
 
         with self.assertRaises(ClientError):
@@ -572,7 +556,7 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
                 self.subscription_deleted_event
             ).get_user_id("cust_123")
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
         expected_payload = {
             "uid": "user123",
             "active": False,
@@ -588,13 +572,6 @@ class StripeCustomerSubscriptionDeletedTest(TestCase):
         ).create_payload("user123")
 
         self.assertEqual(actual_payload.keys(), expected_payload.keys())
-        if actual_payload["messageCreatedAt"] != expected_payload["messageCreatedAt"]:
-            self.assertAlmostEqual(
-                actual_payload["messageCreatedAt"],
-                expected_payload["messageCreatedAt"],
-                delta=10,
-            )
-            expected_payload["messageCreatedAt"] = actual_payload["messageCreatedAt"]
         self.assertEqual(actual_payload, expected_payload)
 
 
@@ -670,7 +647,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
         self.mock_charge = charge_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run_cancel(self):
+    def test_run_cancel(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_product.return_value = self.product
         self.mock_run_pipeline.return_value = None
@@ -680,7 +657,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
         ).run()
         assert did_route
 
-    def test_run_charge(self):
+    def test_run_charge(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_product.return_value = self.product
         self.mock_invoice.return_value = self.invoice
@@ -692,7 +669,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
         ).run()
         assert did_route
 
-    def test_run_reactivate(self):
+    def test_run_reactivate(self) -> None:
         self.mock_customer.return_value = self.customer
         self.mock_product.return_value = self.product
         self.mock_invoice.return_value = self.invoice
@@ -704,7 +681,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
         ).run()
         assert did_route
 
-    def test_run_no_action(self):
+    def test_run_no_action(self) -> None:
         self.mock_customer.return_value = self.customer
 
         did_route = StripeCustomerSubscriptionUpdated(
@@ -712,7 +689,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
         ).run()
         assert did_route == False
 
-    def test_get_user_id_missing(self):
+    def test_get_user_id_missing(self) -> None:
         self.mock_customer.return_value = self.customer_missing_user
 
         with self.assertRaises(ClientError):
@@ -720,7 +697,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
                 self.subscription_updated_event_no_match
             ).get_user_id("cust_123")
 
-    def test_get_user_id_fetch_error(self):
+    def test_get_user_id_fetch_error(self) -> None:
         self.mock_customer.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
         )
@@ -730,7 +707,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
                 self.subscription_updated_event_no_match
             ).get_user_id("cust_123")
 
-    def test_get_user_id_deleted_cust(self):
+    def test_get_user_id_deleted_cust(self) -> None:
         self.mock_customer.return_value = self.deleted_customer
 
         with self.assertRaises(ClientError):
@@ -738,7 +715,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
                 self.subscription_updated_event_no_match
             ).get_user_id("cust_1")
 
-    def test_create_payload_error(self):
+    def test_create_payload_error(self) -> None:
         self.mock_product.side_effect = InvalidRequestError(
             message="invalid data", param="bad data"
         )
@@ -748,7 +725,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
                 self.subscription_updated_event_no_match
             ).create_payload(event_type="event.type", user_id="user_123")
 
-    def test_create_payload_cancelled(self):
+    def test_create_payload_cancelled(self) -> None:
         self.mock_product.return_value = self.product
 
         user_id = "user123"
@@ -776,7 +753,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
 
         assert actual_payload == expected_payload
 
-    def test_create_payload_recurring_charge(self):
+    def test_create_payload_recurring_charge(self) -> None:
         self.mock_product.return_value = self.product
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.return_value = self.charge
@@ -818,7 +795,7 @@ class StripeCustomerSubscriptionUpdatedTest(TestCase):
 
         assert actual_payload == expected_payload
 
-    def test_create_payload_reactivated(self):
+    def test_create_payload_reactivated(self) -> None:
         self.mock_product.return_value = self.product
         self.mock_invoice.return_value = self.invoice
         self.mock_charge.return_value = self.charge

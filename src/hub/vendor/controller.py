@@ -23,8 +23,7 @@ logger = get_logger()
 
 
 class StripeHubEventPipeline:
-    def __init__(self, payload) -> None:
-        assert isinstance(payload, dict)
+    def __init__(self, payload: dict) -> None:
         self.payload: dict = payload
 
     def run(self) -> None:
@@ -47,7 +46,7 @@ class StripeHubEventPipeline:
             pass
 
 
-def view() -> tuple:
+def view() -> Response:
     try:
         payload = request.data
         logger.info("check payload", payload=payload)
@@ -71,12 +70,10 @@ def view() -> tuple:
         pipeline.run()
 
 
-def event_process(missing_event) -> Response:
+def event_process(missing_event: dict) -> Response:
     logger.info("event process", missing_event=missing_event)
     try:
         payload = missing_event
-        if not isinstance(payload, dict):
-            raise Exception
         logger.info("check payload", payload=payload)
         pipeline = StripeHubEventPipeline(payload)
         pipeline.run()

@@ -33,10 +33,10 @@ else:
 
 
 class EventCheck(ABC):
-    def __init__(self, hours_back) -> None:
+    def __init__(self, hours_back: int) -> None:
         self.hours_back = hours_back
 
-    def retrieve_events(self, last_event=str()) -> None:
+    def retrieve_events(self, last_event: str) -> None:
         retrieved_events = 0
         has_more = True
         while has_more:
@@ -64,7 +64,7 @@ class EventCheck(ABC):
             created={"gt": self.get_time_h_hours_ago(self.hours_back)},
         )
 
-    def get_events_with_last_event(self, last_event) -> Dict[str, Any]:
+    def get_events_with_last_event(self, last_event: str) -> Dict[str, Any]:
         return stripe.Event.list(
             limit=100,
             types=CFG.PAYMENT_EVENT_LIST,
@@ -78,7 +78,7 @@ class EventCheck(ABC):
         return int(time.mktime(h_hours_ago.timetuple()))
 
     @staticmethod
-    def process_missing_event(missing_event) -> None:
+    def process_missing_event(missing_event: Dict[str, Any]) -> None:
         event_process(missing_event)
 
 

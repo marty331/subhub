@@ -225,7 +225,7 @@ class TestPayments(TestCase):
         self.mock_stripe_retrieve_invoice = stripe_retrieve_invoice_patch.start()
         self.mock_stripe_retrieve_charge = stripe_retrieve_charge_patch.start()
 
-    def test_valid_subscription(self):
+    def test_valid_subscription(self) -> None:
         self.mock_valid_customer.return_value = self.valid_customer
         self.mock_existing_plan.return_value = self.false_existing_plan
         self.mock_build_subscription.return_value = self.subscription_test1
@@ -238,7 +238,7 @@ class TestPayments(TestCase):
         )
         assert created_sub[1] == 201
 
-    def test_invalid_subscription(self):
+    def test_invalid_subscription(self) -> None:
         self.mock_deleted_customer.return_value = self.deleted_cust
         self.mock_existing_plan.return_value = None
         self.mock_build_subscription.return_value = self.subscription_test1
@@ -252,7 +252,7 @@ class TestPayments(TestCase):
         )
         assert created_sub[1] == 400
 
-    def test_existing_plan_subscription(self):
+    def test_existing_plan_subscription(self) -> None:
         self.mock_valid_customer.return_value = self.valid_customer
         self.mock_existing_plan.return_value = self.true_existing_plan
         created_sub = subscribe_to_plan(
@@ -260,7 +260,7 @@ class TestPayments(TestCase):
         )
         assert created_sub[1] == 409
 
-    def test_find_newest_subscription(self):
+    def test_find_newest_subscription(self) -> None:
         sub1 = convert_to_dict(self.subscription_test1)
         sub2 = convert_to_dict(self.subscription_test3)
         self.subscription_list["data"].append(sub1)
@@ -270,23 +270,23 @@ class TestPayments(TestCase):
         subs = find_newest_subscription(self.subscription_list)
         assert subs == expected
 
-    def test_no_newest_subscription(self):
+    def test_no_newest_subscription(self) -> None:
         subs = find_newest_subscription(None)
         assert subs is None
 
-    def test_find_newest_subscription_no_subscriptions(self):
+    def test_find_newest_subscription_no_subscriptions(self) -> None:
         expected = {"data": [None]}
         subs = find_newest_subscription(self.subscription_list)
         assert subs == expected
 
-    def test_cancel_subscription(self):
+    def test_cancel_subscription(self) -> None:
         self.mock_fetch_customer.return_value = self.valid_customer3
         self.mock_retrieve_stripe_subscriptions.return_value = [self.subscription_test3]
         self.mock_stripe_modify_subscription.return_value = self.subscription_test3
         cancelled = cancel_subscription("cus_test3", "sub_test3")
         assert cancelled[1] == 201
 
-    def test_delete_customer(self):
+    def test_delete_customer(self) -> None:
         first_account_mock = MagicMock()
         first_account_mock.return_value.user_id = "user123"
         first_account_mock.return_value.cust_id = "cus_test1"
@@ -301,12 +301,12 @@ class TestPayments(TestCase):
         deleted_customer = delete_customer("user123")
         assert deleted_customer[1] == 200
 
-    def test_delete_customer_none(self):
+    def test_delete_customer_none(self) -> None:
         self.mock_subhub_user_account.return_value = None
         deleted_customer = delete_customer("user123")
         assert deleted_customer[1] == 404
 
-    def test_delete_customer_fail(self):
+    def test_delete_customer_fail(self) -> None:
         first_account_mock = MagicMock()
         first_account_mock.return_value.user_id = "user123"
         first_account_mock.return_value.cust_id = "cus_test1"
@@ -321,7 +321,7 @@ class TestPayments(TestCase):
         deleted_customer = delete_customer("user123")
         assert deleted_customer[1] == 400
 
-    def test_delete_user(self):
+    def test_delete_user(self) -> None:
         self.mock_add_user_to_deleted_users_record.return_value = "user"
         self.mock_subhub_deleted_user_save.return_value = True
         self.mock_subhub_user_remove.return_value = True
@@ -333,7 +333,7 @@ class TestPayments(TestCase):
         )
         assert deleted_user is True
 
-    def test_delete_user_fail(self):
+    def test_delete_user_fail(self) -> None:
         self.mock_add_user_to_deleted_users_record.return_value = "user"
         self.mock_subhub_deleted_user_save.return_value = False
         deleted_user = delete_user(
@@ -344,7 +344,7 @@ class TestPayments(TestCase):
         )
         assert deleted_user is False
 
-    def test_support_status(self):
+    def test_support_status(self) -> None:
         self.mock_subscription_status.return_value = (
             dict(message="subscription successful"),
             200,
@@ -352,7 +352,7 @@ class TestPayments(TestCase):
         support_status_test = support_status("user123")
         assert support_status_test[1] == 200
 
-    def test_subscription_status(self):
+    def test_subscription_status(self) -> None:
         self.mock_subhub_user_account.return_value.user_id = "user123"
         self.mock_subhub_user_account.return_value.cust_id = "cus_test1"
         self.mock_subhub_user_account.return_value.origin_system = "fake_origin1"
@@ -368,12 +368,12 @@ class TestPayments(TestCase):
         sub_status = subscription_status("user123")
         assert sub_status[1] == 200
 
-    def test_subscription_status_no_cust(self):
+    def test_subscription_status_no_cust(self) -> None:
         self.mock_subhub_user_account.return_value = None
         sub_status = subscription_status("user123")
         assert sub_status[1] == 404
 
-    def test_subscription_status_no_subscriptions(self):
+    def test_subscription_status_no_subscriptions(self) -> None:
         self.mock_subhub_user_account.return_value.user_id = "user123"
         self.mock_subhub_user_account.return_value.cust_id = "cus_test1"
         self.mock_subhub_user_account.return_value.origin_system = "fake_origin1"
@@ -381,7 +381,7 @@ class TestPayments(TestCase):
         sub_status = subscription_status("user123")
         assert sub_status[1] == 403
 
-    def test_update_payment_method_metadata(self):
+    def test_update_payment_method_metadata(self) -> None:
         self.mock_fetch_customer.return_value = self.valid_customer
         self.mock_stripe_modify_customer.return_value = self.valid_customer
         updated_payment_method = update_payment_method(
@@ -389,37 +389,37 @@ class TestPayments(TestCase):
         )
         assert updated_payment_method[1] == 201
 
-    def test_update_payment_method_mismatch(self):
+    def test_update_payment_method_mismatch(self) -> None:
         self.mock_fetch_customer.return_value = self.valid_customer_no_metadata
         updated_payment_method = update_payment_method(
             "user123", {"pmt_token": "tok_mastercard"}
         )
         assert updated_payment_method[1] == 400
 
-    def test_update_payment_method_no_cust(self):
+    def test_update_payment_method_no_cust(self) -> None:
         self.mock_fetch_customer.return_value = None
         updated_payment_method = update_payment_method(
             "user123", {"pmt_token": "tok_visa"}
         )
         assert updated_payment_method[1] == 404
 
-    def test_customer_update(self):
+    def test_customer_update(self) -> None:
         self.mock_fetch_customer.return_value = self.valid_customer
         customer_updated = customer_update("user123")
         assert customer_updated[1] == 200
 
-    def test_customer_update_none(self):
+    def test_customer_update_none(self) -> None:
         self.mock_fetch_customer.return_value = None
         customer_updated = customer_update("user123")
         assert customer_updated[1] == 404
 
-    def test_customer_update_mismatch(self):
+    def test_customer_update_mismatch(self) -> None:
         self.mock_fetch_customer.return_value = self.valid_customer
         customer_updated = customer_update("user321")
         logger.info("customer mismatch", customer_updated=customer_updated)
         assert customer_updated[1] == 400
 
-    def test_create_update_data_intents(self):
+    def test_create_update_data_intents(self) -> None:
         self.mock_stripe_retrieve_invoice.return_value = self.invoice
         self.mock_stripe_retrieve_charge.return_value = self.charge
         self.mock_stripe_retrieve_product.return_value = self.product
@@ -428,7 +428,7 @@ class TestPayments(TestCase):
         logger.info("created update data", created_update_data=created_update_data)
         assert created_update_data["payment_type"] == "credit"
 
-    def test_create_update_data(self):
+    def test_create_update_data(self) -> None:
         self.mock_stripe_retrieve_product.return_value = self.product
         expected = {
             "payment_type": self.customer4["sources"]["data"][0]["funding"],
@@ -460,7 +460,7 @@ class TestPayments(TestCase):
         actual = create_update_data(self.customer4)
         assert actual == expected
 
-    def test_format_plan(self):
+    def test_format_plan(self) -> None:
         expected = {
             "plan_id": self.plan["id"],
             "product_id": self.product["id"],
@@ -476,7 +476,7 @@ class TestPayments(TestCase):
         actual = format_plan(self.plan, self.product)
         self.assertDictEqual(actual, expected)
 
-    def test_format_subscription(self):
+    def test_format_subscription(self) -> None:
         expected = {
             "current_period_end": self.subscription_with_plan["current_period_end"],
             "current_period_start": self.subscription_with_plan["current_period_start"],
@@ -493,7 +493,7 @@ class TestPayments(TestCase):
         actual = format_subscription(self.subscription_with_plan, self.product)
         self.assertDictEqual(actual, expected)
 
-    def test_format_subscription_with_failure(self):
+    def test_format_subscription_with_failure(self) -> None:
         expected = {
             "current_period_end": self.subscription_with_plan["current_period_end"],
             "current_period_start": self.subscription_with_plan["current_period_start"],
@@ -514,7 +514,7 @@ class TestPayments(TestCase):
         )
         self.assertDictEqual(actual, expected)
 
-    def test_find_plan_not_found(self):
+    def test_find_plan_not_found(self) -> None:
         self.mock_stripe_retrieve_plan.side_effect = InvalidRequestError(
             "message", param="plan_id", http_status=404
         )
@@ -526,7 +526,7 @@ class TestPayments(TestCase):
         assert error.status_code == 404
         assert error.to_dict() == dict(message="Plan not found", errno=4003)
 
-    def test_find_product_not_found(self):
+    def test_find_product_not_found(self) -> None:
         self.mock_stripe_retrieve_product.side_effect = InvalidRequestError(
             "message", param="prod_id", http_status=404
         )

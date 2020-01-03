@@ -10,6 +10,7 @@ from stripe.error import InvalidRequestError
 from datetime import datetime
 from typing import Optional, Dict, Any
 from flask import g
+from attrdict import AttrDict
 
 from hub.vendor.abstract import AbstractStripeHubEvent
 from hub.routes.static import StaticRoutes
@@ -96,7 +97,7 @@ class StripeCustomerDeleted(AbstractStripeHubEvent):
 
         return deleted_user
 
-    def create_payload(self, deleted_user) -> Dict[str, Any]:
+    def create_payload(self, deleted_user: SubHubDeletedAccountModel) -> Dict[str, Any]:
         """
         Create payload to be sent to external sources
         :param deleted_user:
@@ -150,7 +151,7 @@ class StripeCustomerSourceExpiring(AbstractStripeHubEvent):
         self.send_to_routes(routes, json.dumps(data))
         return True
 
-    def create_payload(self, customer) -> Dict[str, Any]:
+    def create_payload(self, customer: AttrDict) -> Dict[str, Any]:
         """
         Create payload to be sent to external sources
         :param customer:
@@ -168,7 +169,7 @@ class StripeCustomerSourceExpiring(AbstractStripeHubEvent):
             exp_year=self.payload.data.object.exp_year,
         )
 
-    def first_plan_name(self, subscriptions) -> str:
+    def first_plan_name(self, subscriptions: Dict[str, Any]) -> str:
         """
         Get the plan name to return in the payload
         :param subscriptions:
@@ -221,7 +222,7 @@ class StripeCustomerSubscriptionCreated(AbstractStripeHubEvent):
         logger.info("customer subscription created", data=data)
         return True
 
-    def get_user_id(self, customer_id) -> str:
+    def get_user_id(self, customer_id: str) -> str:
         """
         Fetch the user_id associated with the Stripe customer_id
         :param customer_id:
@@ -250,7 +251,7 @@ class StripeCustomerSubscriptionCreated(AbstractStripeHubEvent):
 
         return user_id
 
-    def create_payload(self, user_id) -> Dict[str, Any]:
+    def create_payload(self, user_id: str) -> Dict[str, Any]:
         """
         Create payload to be sent to external sources
         :param user_id:

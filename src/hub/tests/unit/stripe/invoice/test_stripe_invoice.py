@@ -37,7 +37,7 @@ class StripeInvoicePaymentFailedTest(unittest.TestCase):
         self.mock_product = product_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
 
-    def test_run_success(self):
+    def test_run_success(self) -> None:
         self.mock_product.return_value = self.product
         self.mock_run_pipeline.return_value = None
 
@@ -45,7 +45,7 @@ class StripeInvoicePaymentFailedTest(unittest.TestCase):
 
         assert did_run
 
-    def test_run_subscription_create(self):
+    def test_run_subscription_create(self) -> None:
         self.mock_product.return_value = self.product
         self.mock_run_pipeline.return_value = None
 
@@ -53,7 +53,7 @@ class StripeInvoicePaymentFailedTest(unittest.TestCase):
 
         assert did_run == False
 
-    def test_create_payload(self):
+    def test_create_payload(self) -> None:
         self.mock_product.return_value = self.product
 
         expected_payload = {
@@ -73,7 +73,7 @@ class StripeInvoicePaymentFailedTest(unittest.TestCase):
 
         assert expected_payload == actual_payload
 
-    def test_create_payload_nickname_error(self):
+    def test_create_payload_nickname_error(self) -> None:
         self.mock_product.side_effect = InvalidRequestError(message="", param="")
 
         expected_payload = {
