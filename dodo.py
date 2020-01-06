@@ -1,3 +1,7 @@
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at https://mozilla.org/MPL/2.0/.
+
 import os
 import re
 import pwd
@@ -34,20 +38,9 @@ NEWLINE = "\n"
 VENV = f"{CFG.REPO_ROOT}/venv"
 PYTHON3 = f"{VENV}/bin/python3.7"
 PIP3 = f"{PYTHON3} -m pip"
-NODE_MODULES = f"{CFG.REPO_ROOT}/node_modules"
-SLS = f"{NODE_MODULES}/serverless/bin/serverless"
-SVCS = [
-    svc
-    for svc in os.listdir("services")
-    if os.path.isdir(f"services/{svc}")
-    if os.path.isfile(f"services/{svc}/serverless.yml")
-]
 SRCS = [
     src for src in os.listdir("src/") if os.path.isdir(f"src/{src}") if src != "shared"
 ]
-
-mutex = threading.Lock()
-
 
 def envs(sep=" ", **kwargs):
     envs = dict(
@@ -134,14 +127,6 @@ def pyfiles(path, exclude=None):
     return [pyfile.as_posix() for pyfile in pyfiles]
 
 
-def load_serverless(svc):
-    return yaml.safe_load(open(f"services/{svc}/serverless.yml"))
-
-
-def get_svcs_to_funcs():
-    return {svc: list(load_serverless(svc)["functions"].keys()) for svc in SVCS}
-
-
 def defaults(*args, **kwargs):
     results = [None] * len(kwargs)
     len_args = len(args)
@@ -153,15 +138,6 @@ def defaults(*args, **kwargs):
         else:
             results[i] = v
     return results
-
-
-def get_svc_func(args):
-    svc, func = defaults(*args, svc="fxa", func=None)
-    assert svc in SVCS, f"{svc} is not a valid service in {SVCS}"
-    if func:
-        funcs = get_svcs_to_funcs()[svc]
-        assert func in funcs, f"{func} is not a valid function in {funcs}"
-    return svc, func
 
 
 def parameterized(dec):
@@ -349,7 +325,7 @@ def check_header(f):
 
 def task_check():
     """
-    checks: noroot, python3.7, yarn, awscli, json, yaml, black, reqs
+    checks: noroot, python3.7, yarn, awscli, black, reqs
     """
     yield check_noroot()
     yield gen_prog_check("python3.7")
@@ -357,10 +333,6 @@ def task_check():
     yield gen_prog_check("docker-compose")
     if not CFG("TRAVIS", None):
         yield gen_prog_check("awscli", "aws")
-    yield gen_file_check("json", json.load, "services/**/*.json")
-    yield gen_file_check(
-        "yaml", yaml.safe_load, "services/**/*.yaml", "services/**/*.yml"
-    )
     header_message = "consider running 'doit header:<filename>'"
     yield gen_file_check("header", check_header, "src/**/*.py", message=header_message)
     yield check_black()
@@ -535,32 +507,6 @@ def task_pytest():
         }
 
 
-def task_package():
-    """
-    run serverless package -v for every service
-    """
-    for svc in SVCS:
-        yield {
-            "name": svc,
-            "task_dep": ["check", "yarn", "test"],
-            "actions": [
-                f"cd services/{svc} && env {envs()} {SLS} package --stage {CFG.DEPLOYED_ENV} -v"
-            ],
-        }
-
-
-def task_print():
-    """
-    run serverless print to render the serverless.yml
-    """
-    return {
-        "task_dep": ["yarn"],
-        "actions": [
-            f"cd services/fxa && env {envs()} {SLS} print --stage {CFG.DEPLOYED_ENV}"
-        ],
-    }
-
-
 def task_tar():
     """
     tar up source files, dereferncing symlinks
@@ -610,59 +556,6 @@ def task_local_stop():
     return {"basename": "local-stop", "actions": [f"env {envs()} docker-compose stop"]}
 
 
-@guard("prod")
-def task_deploy():
-    """
-    deploy <svc> [<func>]
-    """
-
-    def deploy(args):
-        svc, func = get_svc_func(args)
-        if func:
-            deploy_cmd = f"cd services/{svc} && env {envs()} {SLS} deploy function --stage {CFG.DEPLOYED_ENV} --aws-s3-accelerate -v --function {func}"
-        else:
-            deploy_cmd = f"cd services/{svc} && env {envs()} {SLS} deploy --stage {CFG.DEPLOYED_ENV} --aws-s3-accelerate -v"
-        call(deploy_cmd, stdout=None, stderr=None)
-
-    return {
-        "task_dep": ["check", "creds", "yarn", "test"],
-        "pos_arg": "args",
-        "actions": [(deploy,)],
-    }
-
-
-@guard("prod")
-def task_domain():
-    """
-    domain <svc> [create|delete]
-    """
-
-    def domain(args):
-        svc, action = defaults(svc="fxa", action=None)
-        assert action in ("create", "delete"), "provide 'create' or 'delete'"
-        domain_cmd = f"cd services/{svc} && env {envs()} {SLS} {action}_domain --stage {CFG.DEPLOYED_ENV} -v"
-        call(domain_cmd, stdout=None, stderr=None)
-
-    return {
-        "task_dep": ["check", "creds", "yarn"],
-        "pos_arg": "args",
-        "actions": [(domain,)],
-    }
-
-
-def task_remove():
-    """
-    run serverless remove -v for every service
-    """
-    for svc in SVCS:
-        servicepath = f"services/{svc}"
-        yield {
-            "name": svc,
-            "task_dep": ["check", "creds", "yarn"],
-            "actions": [f"cd {servicepath} && env {envs()} {SLS} remove -v"],
-        }
-
-
 def task_pip3list():
     """
     venv/bin/pip3.7 list
@@ -677,12 +570,8 @@ def task_curl():
 
     def curl(args):
         svc, func = defaults(*args, svc="fxa", func=None)
-        assert svc in SVCS, f"{svc} is not a valid service in {SVCS}"
-        funcs = (
-            [func]
-            if func
-            else [func for func in get_svcs_to_funcs()[svc] if func != "mia"]
-        )
+        # TODO(med)
+        funcs = []
         for func in funcs:
             for route in ("version", "deployed"):
                 cmd = f"curl --silent https://{CFG.DEPLOYED_ENV}.{svc}.mozilla-subhub.app/v1/{func}/{route}"

@@ -148,3 +148,9 @@ services/fxa/sls
 
 # GDB History
 .gdb_history
+
+# Archives
+*.zip
+
+# Terraform
+*.tfstate
