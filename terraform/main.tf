@@ -2,8 +2,9 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at https://mozilla.org/MPL/2.0/.
 
-# Terraform
-.terraform
-*.tfstate
-terraform.*.*
-.terraform.*.*.*
+
+# https://www.terraform.io/docs/providers/aws/
+provider "aws" {
+  alias  = "configured"
+  region = "us-west-2"
+}
