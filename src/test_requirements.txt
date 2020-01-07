@@ -17,3 +17,4 @@ pytest-mock==1.10.4
 pytest-watch==4.2.0
 requests==2.22.0
 responses==0.10.6
+wiremock==1.2.0

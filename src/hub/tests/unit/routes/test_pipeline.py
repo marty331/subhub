@@ -8,6 +8,8 @@ import json
 from unittest import TestCase
 from mock import patch
 from typing import NamedTuple
+from wiremock.constants import Config
+from wiremock.client import *
 
 import pytest
 
@@ -79,6 +81,10 @@ class RouteTest(TestCase):
         self.mock_pipeline = pipeline_patcher.start()
         self.mock_run_pipeline = run_pipeline_patcher.start()
         self.sns_client = sns_client_patch.start()
+        self.wm = self.wiremock_server = WireMockServer()
+        self.wm.start()
+        Config.base_url = 'http://localhost:{}/__admin'.format(wm.port)
+        os.environ['SALESFORCE_BASKET_URI'] = Config.base_url
 
     def test_salesforce_route(self):
         expected_data = {"event_id": "some_event"}
@@ -102,10 +108,12 @@ class RouteTest(TestCase):
 class FirefoxRouteTest(TestCase):
     def setUp(self) -> None:
         sns_client_patch = patch("boto3.client")
-
         self.addCleanup(sns_client_patch.stop)
-
         self.sns_client = sns_client_patch.start()
+        self.wm = self.wiremock_server = WireMockServer()
+        self.wm.start()
+        Config.base_url = 'http://localhost:{}/__admin'.format(wm.port)
+        os.environ['SALESFORCE_BASKET_URI'] = Config.base_url
 
     def test_firefox_route(self):
         expected_data = {"event_id": "some_event"}
@@ -121,11 +129,8 @@ class FirefoxAllRouteTest(TestCase):
         self.expected_firefox_data = [
             dict(route_type="firefox_route", data=dict(event_id="some_event"))
         ]
-
         sns_client_patch = patch("boto3.client")
-
         self.addCleanup(sns_client_patch.stop)
-
         self.sns_client = sns_client_patch.start()
 
     def test_firefox_route(self):
@@ -134,17 +139,23 @@ class FirefoxAllRouteTest(TestCase):
         route_ran = route.run()
         assert route_ran["ResponseMetadata"]["HTTPStatusCode"] == 200
 
+class SalesForceRouteTestAgainstMock(TestCase):
+    def setUp(self) -> None:
+        self.wm = self.wiremock_server = WireMockServer()
+        self.wm.start()
+        Config.base_url = 'http://localhost:{}/__admin'.format(wm.port)
+        os.environ['SALESFORCE_BASKET_URI'] = Config.base_url
 
-def test_salesforce_route():
-    expected_data = {
-        "event_id": "evt_00000000000000",
-        "event_type": "customer.created",
-        "email": "user123@tester.com",
-        "customer_id": "cus_00000000000000",
-        "name": "",
-        "user_id": "user123",
-    }
-    report_route = ["salesforce_route"]
-    route = RoutesPipeline(report_route, json.dumps(expected_data))
-    route_ran = route.run()
-    assert route_ran == 200
+    def test_salesforce_route():
+        expected_data = {
+            "event_id": "evt_00000000000000",
+            "event_type": "customer.created",
+            "email": "user123@tester.com",
+            "customer_id": "cus_00000000000000",
+            "name": "",
+            "user_id": "user123",
+        }
+        report_route = ["salesforce_route"]
+        route = RoutesPipeline(report_route, json.dumps(expected_data))
+        route_ran = route.run()
+        assert route_ran == 200
